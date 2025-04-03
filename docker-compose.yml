@@ -1,7 +1,7 @@
 services:
   web:
     build: ./
-    container_name: django-web
+    container_name: web
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./:/usr/src/app
@@ -20,9 +20,12 @@ services:
     container_name: nginx
     volumes:
       - static:/static
-      - media:/media\
+      - media:/media
     ports:
       - 80:80
     depends_on:
       - web
 
+volumes:
+  static:
+  media:
