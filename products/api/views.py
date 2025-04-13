@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,3 +21,7 @@ class ProductView(APIView):
         serializer = ProductSerializer(products, many=True)
         print(serializer )
         return Response(serializer.data)
+
+def sum_(request, num1, num2):
+    result = num1 + num2
+    return JsonResponse({"result":result})
