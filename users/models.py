@@ -39,7 +39,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255, null=True, blank=True)
-    
+    phone = models.CharField(max_length=15, unique=True)
+    email_verified = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+
     role = models.ForeignKey(UserRole, on_delete=models.CASCADE, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
@@ -49,7 +52,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     update_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name']
+    REQUIRED_FIELDS = ['first_name', 'phone']
 
     objects = CustomUserManager()
 
