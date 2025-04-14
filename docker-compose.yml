@@ -13,19 +13,28 @@ services:
     env_file:
       - ./.env
 
-  nginx:
-    restart: always
-    build:
-      context: ./nginx
-    container_name: nginx
+  db:
+    image: postgres:16
+    container_name: postgres
     volumes:
-      - static:/static
-      - media:/media
-    ports:
-      - 80:80
-    depends_on:
-      - web
+      - pgdata:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.db
+
+  # nginx:
+  #   restart: always
+  #   build:
+  #     context: ./nginx
+  #   container_name: nginx
+  #   volumes:
+  #     - static:/static
+  #     - media:/media
+  #   ports:
+  #     - 80:80
+  #   depends_on:
+  #     - web
 
 volumes:
+  pgdata:
   static:
   media:

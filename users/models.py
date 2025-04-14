@@ -1,9 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.utils import timezone
-from datetime import timedelta
 from django.db import models
 import uuid
-import re
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -39,7 +36,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255, null=True, blank=True)
-    
+    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    email_verified = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+
     role = models.ForeignKey(UserRole, on_delete=models.CASCADE, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
@@ -49,7 +49,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     update_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name']
+    REQUIRED_FIELDS = ['first_name', 'phone']
 
     objects = CustomUserManager()
 

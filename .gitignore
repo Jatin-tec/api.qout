@@ -2,10 +2,17 @@
 .idx
 .venv
 .env
+.env.*
 .vscode
+
+# logs
+logs
 
 # cache
 __pycache__
 
 # db
 db.sqlite3
+
+# data
+simulated_data

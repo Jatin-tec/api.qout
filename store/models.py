@@ -3,13 +3,14 @@ from users.models import CustomUser
 
 class Store(models.Model):
     name = models.CharField(max_length=255)
-    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    
-    address = models.CharField(max_length=255)
-    city = models.CharField(max_length=255)
+    address = models.TextField()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        verbose_name_plural = "Stores"
+class StoreStaff(models.Model):
+    user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.role} at {self.store.name}"

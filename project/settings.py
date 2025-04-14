@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 import os
+import logging.config
 
 load_dotenv()
 
@@ -13,13 +14,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', False)
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS').split(',')
-HOST= os.getenv('HOST_URL')
+HOST = os.environ.get("HOST", default="http://localhost:8000")
 
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS').split(',')
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS').split(',')
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'import_export',
     'rest_framework',
     'users',
     'store',
@@ -79,9 +81,13 @@ ASGI_APPLICATION = 'project.asgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": os.environ.get('DATABASE_ENGINE',  "django.db.backends.sqlite3"),
+        "NAME": os.environ.get('DATABASE_NAME', BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get('DATABASE_USER', "user"),
+        "PASSWORD": os.environ.get('DATABASE_PASSWORD', "password"),
+        "HOST": os.environ.get('DATABASE_HOST', "localhost"),
+        "PORT": os.environ.get('DATABASE_PORT', "5432"),
     }
 }
 
@@ -125,7 +131,7 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": False,
 
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": os.getenv('SECRET_KEY'),
+    "SIGNING_KEY": os.getenv('DJANGO_SECRET_KEY'),
     "VERIFYING_KEY": "",
     "AUDIENCE": None,
     "ISSUER": None,
@@ -179,3 +185,41 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs/app.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'app': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Ensure the logs directory exists
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)

@@ -10,7 +10,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         email = data.get('email', None)
         password = data.get('password', None)
-\
+        
         if email is None:
             raise serializers.ValidationError('An email address is required to log in.')
 
@@ -18,11 +18,15 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('A password is required to log in.')
 
         user = authenticate(username=email, password=password)
+       
+        print(user, user.is_active, 'user')
 
         if not user.is_active:
             raise serializers.ValidationError('This user has been deactivated.')
 
         refresh = RefreshToken.for_user(user)
+
+        print(refresh, 'refresh')
 
         return {
             'email': user.email,
@@ -33,6 +37,22 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-class RegisterSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(max_length=128)
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'password', 'first_name', 'last_name', 'phone']
+
+    def create(self, validated_data):
+        user = CustomUser.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data.get('last_name', ''),
+            phone=validated_data['phone']
+        )
+        return user
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'first_name', 'last_name', 'phone', 'email_verified']
