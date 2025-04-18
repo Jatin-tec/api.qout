@@ -3,6 +3,7 @@ from users.models import CustomUser
 
 class Store(models.Model):
     name = models.CharField(max_length=255)
+    manager = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='managed_stores', null=True, blank=True)
     address = models.TextField()
 
     def __str__(self):
