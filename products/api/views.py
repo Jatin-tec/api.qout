@@ -14,15 +14,20 @@ from products.api.serializers import ProductSerializer
 logger = logging.getLogger('app')
 
 class ProductView(APIView):
-    permission_classes = []
-    authentication_classes = []
-
     def get(self, request, barcode=None):
+        user = request.user
         if barcode:
             product = get_object_or_404(Product, barcode=barcode)
             serializer = ProductSerializer(product)
             logger.info(f"Product details retrieved for barcode {barcode}.")
             return Response(serializer.data)
+        
+        if user.role.name == 'admin' or user.role.name == 'manager':
+            products = Product.objects.filter(store__manager=user)
+            serializer = ProductSerializer(products, many=True)
+            logger.info("All products retrieved.")
+            return Response(serializer.data)
+
         products = Product.objects.all()
         serializer = ProductSerializer(products, many=True)
         logger.info("All products retrieved.")

@@ -19,14 +19,10 @@ class LoginSerializer(serializers.Serializer):
 
         user = authenticate(username=email, password=password)
        
-        print(user, user.is_active, 'user')
-
         if not user.is_active:
             raise serializers.ValidationError('This user has been deactivated.')
 
         refresh = RefreshToken.for_user(user)
-
-        print(refresh, 'refresh')
 
         return {
             'email': user.email,

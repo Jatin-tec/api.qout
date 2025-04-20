@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from carts.models import Cart, CartSession, CartItem
 from products.models import Product
+import random
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,3 +27,23 @@ class CartSessionSerializer(serializers.ModelSerializer):
         model = CartSession
         fields = ['id', 'user', 'cart', 'started_at', 'ended_at', 'is_checked_out', 'items']
         read_only_fields = ['started_at', 'ended_at', 'is_checked_out', 'user', 'cart']
+
+
+class CartSerializer(serializers.ModelSerializer):
+    store = serializers.CharField(source='store.name', read_only=True)
+    charge = serializers.SerializerMethodField()
+    items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cart
+        fields = ['cart_id', 'store', 'items', 'status', 'charge']
+        read_only_fields = ['cart_id', 'store', 'items']
+
+    def get_charge(self, obj):
+        charge = random.randint(0, 100)
+        return charge
+    
+    def get_items(self, obj):
+        cart_items = CartItem.objects.filter(session__cart=obj)
+        serializer = CartItemSerializer(cart_items, many=True)
+        return serializer.data

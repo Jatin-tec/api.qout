@@ -8,7 +8,7 @@ from rest_framework import status, permissions
 
 from products.models import Product
 from carts.models import Cart, CartSession, CartItem
-from carts.api.serializers import CartSessionSerializer, CartItemSerializer
+from carts.api.serializers import CartSessionSerializer, CartItemSerializer, CartSerializer
 
 logger = logging.getLogger('app')
 
@@ -121,3 +121,31 @@ class CheckoutCartSessionView(APIView):
 
         logger.info(f"User {request.user.email} checked out cart session {session_id}.")
         return Response({"message": "Checkout successful"}, status=status.HTTP_200_OK)
+
+
+class CartView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, cart_id=None):
+        user = request.user
+        
+        if user.role.name not in ["admin", "manager"]:
+            logger.error(f"Unauthorized access attempt by user {user.email} to view cart.")
+            return Response({"error": "You do not have permission to view this cart."}, status=status.HTTP_403_FORBIDDEN)
+        
+        if cart_id:
+            cart = get_object_or_404(Cart, cart_id=cart_id)
+            return Response(CartSerializer(cart).data)
+
+        carts = Cart.objects.filter(store__manager=user)
+
+        return Response(CartSerializer(carts, many=True).data)
+
+    def post(self, request):
+        serializer = CartSerializer(data=request.data)
+        if serializer.is_valid():
+            cart = serializer.save()
+            logger.info(f"Cart created with ID {cart.cart_id} for user {request.user.email}.")
+            return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
+        logger.error(f"Failed to create cart for user {request.user.email}: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

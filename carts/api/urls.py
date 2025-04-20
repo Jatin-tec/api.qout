@@ -4,10 +4,13 @@ from carts.api.views import (
     AddCartItemView,
     RemoveCartItemView,
     ViewCartSessionView,
-    CheckoutCartSessionView
+    CheckoutCartSessionView,
+    CartView
 )
 
 urlpatterns = [
+    path('', CartView.as_view(), name='cart'),
+
     path('start/<uuid:cart_id>/', StartCartSessionView.as_view(), name='start-cart-session'),
     path('session/<int:session_id>/', ViewCartSessionView.as_view(), name='view-cart-session'),
     path('session/<int:session_id>/add/', AddCartItemView.as_view(), name='add-cart-item'),
