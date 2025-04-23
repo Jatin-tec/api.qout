@@ -64,6 +64,41 @@ class AddCartItemView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class AddCartItemViewWithoutSession(APIView):
+    permission_classes = []
+
+    def post(self, request, session_id):
+        session = get_object_or_404(CartSession, id=session_id, is_checked_out=False)
+        serializer = CartItemSerializer(data=request.data)
+
+        if 'barcode' not in request.data:
+            logger.error(f"Barcode missing in add item request by user {session.user.email} for session {session_id}.")
+            return Response({"error": "Barcode is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if serializer.is_valid():
+            barcode = serializer.validated_data['barcode']
+            try:
+                product = Product.objects.get(barcode=barcode, store=session.cart.store)
+            except Product.DoesNotExist:
+                logger.error(f"Product with barcode {barcode} not found in store {session.cart.store.name} for session {session_id}.")
+                return Response({"error": "Product not found in the store."}, status=status.HTTP_404_NOT_FOUND)
+
+            item, created = CartItem.objects.get_or_create(
+                session=session,
+                product=product,
+                defaults={'quantity': serializer.validated_data['quantity']}
+            )
+
+            if not created:
+                item.quantity += serializer.validated_data['quantity']
+                item.save()
+            logger.info(f"User {request.user.email} added product {item.product.name} to cart session {session_id} from cart.")
+            return Response(CartItemSerializer(item).data, status=status.HTTP_200_OK)
+
+        logger.error(f"Failed to add item to cart session {session_id} by user {session.user.email}: {serializer.errors} from cart.")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class RemoveCartItemView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -98,6 +133,41 @@ class RemoveCartItemView(APIView):
             return Response({"message": "Item removed"}, status=status.HTTP_200_OK)
 
 
+class RemoveCartItemViewWithoutSession(APIView):
+    permission_classes = []
+
+    def post(self, request, session_id):
+        session = get_object_or_404(CartSession, id=session_id, is_checked_out=False)
+        serializer = CartItemSerializer(data=request.data)
+
+        if 'barcode' not in request.data:
+            logger.error(f"Barcode missing in remove item request by user {session.user.email} for session {session_id}.")
+            return Response({"error": "Barcode is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        barcode = request.data['barcode']
+        try:
+            product = Product.objects.get(barcode=barcode, store=session.cart.store)
+        except Product.DoesNotExist:
+            logger.error(f"Product with barcode {barcode} not found in store {session.cart.store.name} for session {session_id}.")
+            return Response({"error": "Product not found in the store."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            item = CartItem.objects.get(session=session, product=product)
+        except CartItem.DoesNotExist:
+            logger.error(f"Product {product.name} not found in cart session {session_id} for user {session.user.email}.")
+            return Response({"error": "Product not found in the cart."}, status=status.HTTP_404_NOT_FOUND)
+
+        if item.quantity > 1:
+            item.quantity -= 1
+            item.save()
+            logger.info(f"User {session.user.email} decreased quantity of product {item.product.name} in session {session_id}.")
+            return Response(CartItemSerializer(item).data, status=status.HTTP_200_OK)
+        else:
+            item.delete()
+            logger.info(f"User {session.user.email} removed product {item.product.name} from session {session_id}.")
+            return Response({"message": "Item removed"}, status=status.HTTP_200_OK) 
+
+
 class ViewCartSessionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -105,6 +175,12 @@ class ViewCartSessionView(APIView):
         session = get_object_or_404(CartSession, id=session_id, user=request.user)
         return Response(CartSessionSerializer(session).data)
 
+class ViewCartSessionViewWithoutSession(APIView):
+    permission_classes = []
+
+    def get(self, request, session_id):
+        session = get_object_or_404(CartSession, id=session_id, is_checked_out=False)
+        return Response(CartSessionSerializer(session).data)
 
 class CheckoutCartSessionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -121,3 +197,12 @@ class CheckoutCartSessionView(APIView):
 
         logger.info(f"User {request.user.email} checked out cart session {session_id}.")
         return Response({"message": "Checkout successful"}, status=status.HTTP_200_OK)
+
+
+class GetActiveSession(APIView):
+    permission_classes = []
+
+    def get(self, request, cart_id):
+        # id: number
+        session = get_object_or_404(CartSession, cart__cart_id=cart_id, is_checked_out=False)
+        return Response(CartSessionSerializer(session).data)
